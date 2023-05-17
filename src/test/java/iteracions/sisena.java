@@ -1,7 +1,5 @@
 package iteracions;
 
-import com.drpicox.game.idea.plants.EndMoonStep_900_HarvestIdea;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -13,7 +11,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
-public class cinquena { //97% (76/78)	25% (91/362)	23% (233/998)
+public class sisena { //97% (76/78)	33% (122/362)	31% (316/998)
 
     static String packageName = "com.drpicox.game"; // insert the package name here
     static String outputDirShort = "com.drpicox.tests"; // insert the output directory here
@@ -90,17 +88,17 @@ public class cinquena { //97% (76/78)	25% (91/362)	23% (233/998)
 
 
 
-    private static String constructorParametrType(Constructor constructor) {
-        String junitCode = "";
+    private static String constructorParametrType(Constructor constructor, int run) {
+        String junitCode = "/*" + run + "*/";
         Class[] parameters = constructor.getParameterTypes();
         int i = 0;
         for (Class parameter : parameters) {
+            junitCode += "/*" +  parameter.getSimpleName() + "*/";
             switch(parameter.getSimpleName()) {
-                case "byte": junitCode += "0";
-                    break;
-                case "short": junitCode += "0";
-                    break;
-                case "int": junitCode += "0";
+                case "byte":
+                case "short":
+                case "int":
+                    junitCode += "0";
                     break;
                 case "long": junitCode += "0.0L";
                     break;
@@ -114,10 +112,41 @@ public class cinquena { //97% (76/78)	25% (91/362)	23% (233/998)
                     break;
                 case "boolean": junitCode += "false";
                     break;
-                default: junitCode += "null";
+                case "Map": junitCode += "new java.util.HashMap<>()";
+                    break;
+                case "List": junitCode += "new java.util.ArrayList()";
+                    break;
+                default:
+                    if (parameter.isInterface()) junitCode += "null";
+                    else {
+                        junitCode += "new " + parameter.getCanonicalName();
+                        if (parameter.isArray()) junitCode += "{";
+                        else junitCode += "(";
+
+                        Constructor<?> paramConstructor = null;
+                        Constructor<?>[] constructors = parameter.getDeclaredConstructors();
+
+                        for (Constructor constr : constructors) {
+                            if (constr.getDeclaringClass() == parameter) ;
+                                paramConstructor = constr;
+                        }
+
+                        if (paramConstructor != null) {
+                            junitCode += "\n\t\t\t";
+                            int r = 0;
+                            while (r < run) {
+                                junitCode += "\t";
+                                r++;
+                            }
+                            junitCode += constructorParametrType(paramConstructor, run+1);
+                        }
+
+                        if (parameter.isArray()) junitCode += "}";
+                        else junitCode += ")";
+                    }
             }
             if (i < constructor.getParameterCount() - 1) {
-                junitCode += ", ";
+                junitCode += ",";
             }
             i++;
         }
@@ -141,7 +170,7 @@ public class cinquena { //97% (76/78)	25% (91/362)	23% (233/998)
                 junitCode += "\t\t\tinstance = new " + className + "(";
             else
                 junitCode += "\t\t\tinstance" + i + " = new " + className + "(";
-            junitCode += constructorParametrType(constructor);
+            junitCode += constructorParametrType(constructor, 1);
             junitCode += ");\n";
             junitCode += "\t\t} catch (Exception e) {}\n";
             junitCode += "\t}\n\n";
@@ -277,32 +306,3 @@ public class cinquena { //97% (76/78)	25% (91/362)	23% (233/998)
         Files.write(Paths.get(fileName), content.getBytes(), StandardOpenOption.CREATE);
     }
 }
-
-
-/*
-
-import java.lang.reflect.Constructor;
-
-public class Main {
-    public static void main(String[] args) throws Exception {
-        // The name of the class you're trying to instantiate
-        String className = "com.example.MyClass";
-
-        // Load the class
-        Class<?> cls = Class.forName(className);
-
-        // Get the constructor. This assumes your constructor takes a single string parameter.
-        // If it doesn't, change this to match the actual parameter types.
-        Constructor<?> constructor = cls.getDeclaredConstructor(String.class);
-
-        // Since the constructor is protected, we have to make it accessible
-        constructor.setAccessible(true);
-
-        // Call the constructor and get an instance
-        Object instance = constructor.newInstance("constructor argument");
-
-        System.out.println("Created an instance of " + instance.getClass().getSimpleName());
-    }
-}
-
-*/
